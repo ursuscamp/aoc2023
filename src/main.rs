@@ -1,3 +1,14 @@
+mod days;
+
+pub use days::*;
+
 fn main() {
-    println!("Hello, world!");
+    let days = vec![&day01];
+
+    std::env::args().skip(1).for_each(|arg| {
+        let day = arg.parse::<usize>().unwrap();
+        println!("--- Day {day:02} ---");
+        days[day - 1]();
+        println!("")
+    });
 }
