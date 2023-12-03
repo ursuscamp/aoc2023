@@ -4,7 +4,7 @@ mod util;
 pub use days::*;
 
 fn main() {
-    let days = vec![&day01];
+    let days: Vec<&dyn Fn() -> ()> = vec![&day01, &day02];
 
     std::env::args().skip(1).for_each(|arg| {
         let day = arg.parse::<usize>().unwrap();
