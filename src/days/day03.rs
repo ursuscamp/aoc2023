@@ -1,4 +1,8 @@
-use std::{collections::HashSet, ops::Deref, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    str::FromStr,
+};
 
 use crate::util::read_input;
 
@@ -16,6 +20,13 @@ fn problem1() {
 
 fn problem2() {
     let input = read_input(3, 2);
+    let schematic = Schematic::from_str(&input).unwrap();
+    let gear_ratios: u64 = schematic
+        .gear_ratios()
+        .into_iter()
+        .map(|(a, b)| a * b)
+        .sum();
+    println!("{gear_ratios}");
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -123,6 +134,17 @@ impl Schematic {
         }
     }
 
+    pub fn is_asterisk(&self, coord: Pair) -> bool {
+        let line = match self.grid.get(coord.1) {
+            Some(line) => line,
+            None => return false,
+        };
+        match line.get(coord.0) {
+            Some(Cell::Symbol('*')) => true,
+            _ => false,
+        }
+    }
+
     pub fn part_numbers(&self) -> Vec<u64> {
         let mut parts = Vec::new();
         for (y, line) in self.grid.iter().enumerate() {
@@ -150,6 +172,59 @@ impl Schematic {
                 parts.push(n);
             }
             digits.clear();
+        }
+        return parts;
+    }
+
+    pub fn gear_ratios(&self) -> Vec<(u64, u64)> {
+        let mut parts = Vec::new();
+        for (y, line) in self.grid.iter().enumerate() {
+            let mut digits = Vec::new();
+            let mut asterisks = HashSet::new();
+            for (x, cell) in line.iter().enumerate() {
+                if let Cell::Number(n) = cell {
+                    digits.push(n);
+                    let adjacent = Pair::new(x, y).adjacent();
+                    for possible in adjacent.iter() {
+                        if self.is_asterisk(*possible) {
+                            asterisks.insert(*possible);
+                        }
+                    }
+                    continue;
+                }
+                if asterisks.len() > 0 && digits.len() > 0 {
+                    let s: String = digits.iter().map(Deref::deref).collect();
+                    let n: u64 = s.parse().unwrap();
+                    for asterisk in asterisks.clone() {
+                        parts.push((asterisk, n));
+                    }
+                }
+                digits.clear();
+                asterisks.clear();
+            }
+            if asterisks.len() > 0 && digits.len() > 0 {
+                let s: String = digits.iter().map(Deref::deref).collect();
+                let n: u64 = s.parse().unwrap();
+                for asterisk in asterisks {
+                    parts.push((asterisk, n));
+                }
+            }
+            digits.clear();
+        }
+        let mut parts_map = HashMap::new();
+        for (asterisk, number) in parts {
+            let v: &mut Vec<u64> = parts_map
+                .entry(asterisk)
+                .or_insert_with(|| Vec::new())
+                .as_mut();
+            v.push(number);
+        }
+
+        let mut parts = Vec::new();
+        for (_asterisk, ast_parts) in parts_map {
+            if ast_parts.len() == 2 {
+                parts.push((ast_parts[0], ast_parts[1]));
+            }
         }
         return parts;
     }
@@ -184,5 +259,15 @@ mod tests {
         let part_number_sum: u64 = schematic.part_numbers().iter().sum();
         println!("{schematic:?}");
         assert_eq!(part_number_sum, 4361);
+    }
+
+    #[test]
+    fn test_problem2() {
+        let input = read_example(3, 1);
+        let schematic = Schematic::from_str(&input).unwrap();
+        let gear_ratios = schematic.gear_ratios();
+        println!("{gear_ratios:?}");
+        let total: u64 = gear_ratios.into_iter().map(|(a, b)| a * b).sum();
+        assert_eq!(total, 467835);
     }
 }
