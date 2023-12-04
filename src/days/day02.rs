@@ -23,7 +23,16 @@ fn problem1() {
     println!("{result}");
 }
 
-fn problem2() {}
+fn problem2() {
+    let input = read_input(2, 2);
+    let values = input
+        .lines()
+        .map(|line| Game::from_str(line))
+        .map(Result::unwrap);
+
+    let result: u64 = values.map(|g| g.min_color_set().power()).sum();
+    println!("{result}");
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Color {
@@ -55,6 +64,17 @@ pub struct Handful {
 impl Handful {
     pub fn contains(&self, other: &Handful) -> bool {
         self.red >= other.red && self.green >= other.green && self.blue >= other.blue
+    }
+
+    pub fn power(&self) -> u64 {
+        self.red * self.green * self.blue
+    }
+
+    pub fn aggregate_min(&mut self, other: &Handful) {
+        let Handful { red, green, blue } = other;
+        self.red = self.red.max(*red);
+        self.blue = self.blue.max(*blue);
+        self.green = self.green.max(*green);
     }
 }
 
@@ -101,6 +121,14 @@ impl Game {
             }
         }
         true
+    }
+
+    pub fn min_color_set(&self) -> Handful {
+        let mut min_set = Handful::default();
+        for handful in &self.results {
+            min_set.aggregate_min(handful);
+        }
+        min_set
     }
 }
 
