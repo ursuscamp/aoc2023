@@ -1,4 +1,7 @@
-use std::{collections::HashSet, str::FromStr};
+use std::{
+    collections::{HashSet, VecDeque},
+    str::FromStr,
+};
 
 use anyhow::anyhow;
 
@@ -17,9 +20,13 @@ fn problem1() {
 }
 
 fn problem2() {
-    let input = read_input(4, 2);
+    let input = read_input(4, 1);
+    let cards: Vec<Card> = input.lines().map(|l| Card::from_str(l).unwrap()).collect();
+    let result = queue_executor(&cards);
+    println!("{result}");
 }
 
+#[derive(Debug, Clone)]
 pub struct Card {
     id: u64,
     winners: HashSet<u64>,
@@ -27,9 +34,14 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn points(&self) -> u64 {
+    pub fn winning_numbers(&self) -> usize {
         let union = self.winners.intersection(&self.have);
         let c = union.count();
+        c
+    }
+
+    pub fn points(&self) -> u64 {
+        let c = self.winning_numbers();
         if c == 0 {
             return 0;
         }
@@ -67,6 +79,22 @@ impl FromStr for Card {
     }
 }
 
+fn queue_executor(cards: &[Card]) -> u64 {
+    let mut queue: VecDeque<Card> = cards.iter().cloned().collect();
+    let mut counter: u64 = 0;
+    while let Some(card) = queue.pop_front() {
+        counter += 1;
+        let winners = card.winning_numbers();
+        if winners > 0 {
+            let id = card.id as usize;
+            let r = id..(id + winners);
+            let next_set = cards[r].iter().cloned();
+            queue.extend(next_set);
+        }
+    }
+    counter
+}
+
 #[cfg(test)]
 mod tests {
     use crate::util::read_example;
@@ -87,5 +115,11 @@ mod tests {
     #[test]
     fn test_problem2() {
         let input = read_example(4, 1);
+        let cards: Vec<Card> = input
+            .lines()
+            .map(|line| Card::from_str(line).unwrap())
+            .collect();
+        let q = queue_executor(&cards);
+        assert_eq!(q, 30);
     }
 }
