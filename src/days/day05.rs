@@ -20,7 +20,13 @@ fn problem1() {
 }
 
 fn problem2() {
-    // let input = read_input(5, 1);
+    let input = read_input(5, 1);
+    let sm = SeedMapper::from_str(&input).unwrap();
+    let nearest_locations = sm
+        .final_locations_ranges()
+        .iter()
+        .fold(u64::MAX, |acc, v| acc.min(*v));
+    println!("Nearest location: {nearest_locations}");
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +44,20 @@ impl SeedMapper {
             }
             vals
         })
+    }
+
+    fn final_locations_ranges(&self) -> Vec<u64> {
+        let mut destinations = Vec::new();
+        for seed_range in self.seeds.chunks(2) {
+            let start = seed_range[0];
+            let end = seed_range[1] + start;
+            for seed in start..end {
+                for seed_map in &self.maps {
+                    destinations.push(seed_map.destination(seed));
+                }
+            }
+        }
+        destinations
     }
 }
 
